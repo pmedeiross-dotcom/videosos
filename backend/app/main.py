@@ -1,18 +1,21 @@
 import os
 
+import httpx
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from agents import Agent, Runner
 
 from .schemas import FilmBrief
 
 load_dotenv()
 
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434").rstrip("/")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:3b")
+
 app = FastAPI(
     title="AI Film Studio API",
-    version="0.1.0",
-    description="Agente de pré-produção cinematográfica com OpenAI.",
+    version="0.2.0",
+    description="Estúdio particular de pré-produção com modelo local via Ollama.",
 )
 
 origins = [
@@ -31,44 +34,30 @@ app.add_middleware(
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "ai-film-studio-api"}
+    return {
+        "status": "ok",
+        "service": "ai-film-studio-api",
+        "ai_provider": "ollama-local",
+        "model": OLLAMA_MODEL,
+    }
 
 
 @app.post("/api/films/plan")
 async def plan_film(brief: FilmBrief):
-    if not os.getenv("OPENAI_API_KEY"):
-        raise HTTPException(
-            status_code=503,
-            detail="Configure OPENAI_API_KEY no ambiente do backend.",
-        )
-
-    model = os.getenv("OPENAI_MODEL")
-    if not model:
-        raise HTTPException(
-            status_code=503,
-            detail="Configure OPENAI_MODEL com um modelo habilitado na sua conta API.",
-        )
-
-    director = Agent(
-        name="Diretor de produção cinematográfica",
-        model=model,
-        instructions=(
-            "Você é um diretor de cinema e produtor executivo. "
-            "Transforme o briefing em um plano de pré-produção executável. "
-            "Responda em português brasileiro. "
-            "Entregue: logline, sinopse, direção criativa, personagens "
-            "com descrição visual consistente, cenas numeradas com objetivo "
-            "dramático, local, horário, personagens presentes, ação, diálogos, "
-            "planos de câmera e duração estimada. Inclua notas de produção "
-            "e riscos de custo. Não invente que vídeos foram gerados: esta etapa "
-            "é somente planejamento. Preserve coerência histórica quando o tema "
-            "for histórico ou bíblico e sinalize escolhas ficcionais."
-        ),
+    system_prompt = (
+        "Você é um diretor de cinema, roteirista e produtor executivo. "
+        "Transforme o briefing em um plano de pré-produção claro e executável. "
+        "Responda sempre em português brasileiro. "
+        "Entregue: logline, sinopse, direção criativa, personagens com descrições "
+        "visuais consistentes, cenas numeradas, objetivo dramático, local, horário, "
+        "personagens presentes, ação, diálogos, planos de câmera e duração estimada. "
+        "Inclua notas de produção e alternativas econômicas. "
+        "Não afirme que imagens ou vídeos foram gerados: esta etapa é somente planejamento. "
+        "Em temas históricos ou bíblicos, preserve a coerência dos fatos conhecidos "
+        "e identifique claramente qualquer licença ficcional."
     )
-
-    prompt = (
-        "Crie o plano de produção para este filme. "
-        "Retorne uma estrutura clara em Markdown.\n\n"
+    user_prompt = (
+        "Crie o plano de produção para este filme em Markdown.\n\n"
         f"Título: {brief.title}\n"
         f"Premissa: {brief.premise}\n"
         f"Duração alvo: {brief.target_duration_minutes} minutos\n"
@@ -79,14 +68,43 @@ async def plan_film(brief: FilmBrief):
     )
 
     try:
-        result = await Runner.run(director, prompt)
+        async with httpx.AsyncClient(timeout=httpx.Timeout(300.0, connect=10.0)) as client:
+            response = await client.post(
+                f"{OLLAMA_BASE_URL}/api/chat",
+                json={
+                    "model": OLLAMA_MODEL,
+                    "stream": False,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    "options": {"temperature": 0.7},
+                },
+            )
+            response.raise_for_status()
+            result = response.json()
+        answer = result.get("message", {}).get("content", "").strip()
+        if not answer:
+            raise HTTPException(status_code=502, detail="O modelo local retornou uma resposta vazia.")
         return {
             "status": "planned",
+            "provider": "ollama-local",
+            "model": OLLAMA_MODEL,
             "project": brief.model_dump(),
-            "plan_markdown": str(result.final_output),
+            "plan_markdown": answer,
         }
-    except Exception as exc:
+    except httpx.ConnectError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Não foi possível conectar ao Ollama. Instale-o e inicie o serviço local.",
+        ) from exc
+    except httpx.HTTPStatusError as exc:
         raise HTTPException(
             status_code=502,
-            detail=f"Falha ao gerar o plano: {type(exc).__name__}",
+            detail=f"O Ollama retornou HTTP {exc.response.status_code}. Confira se o modelo foi baixado.",
+        ) from exc
+    except httpx.TimeoutException as exc:
+        raise HTTPException(
+            status_code=504,
+            detail="O modelo local demorou demais para responder. Tente um briefing menor.",
         ) from exc
