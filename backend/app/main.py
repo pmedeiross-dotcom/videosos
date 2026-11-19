@@ -2,10 +2,11 @@ import os
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from .schemas import FilmBrief
+from .storage import get_project, initialize_database, list_projects, save_project
 
 load_dotenv()
 
@@ -14,8 +15,8 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:3b")
 
 app = FastAPI(
     title="AI Film Studio API",
-    version="0.2.0",
-    description="Estúdio particular de pré-produção com modelo local via Ollama.",
+    version="0.3.0",
+    description="Estúdio particular de pré-produção com modelo local via Ollama e armazenamento SQLite.",
 )
 
 origins = [
@@ -32,6 +33,11 @@ app.add_middleware(
 )
 
 
+@app.on_event("startup")
+async def startup() -> None:
+    initialize_database()
+
+
 @app.get("/health")
 async def health():
     return {
@@ -39,7 +45,21 @@ async def health():
         "service": "ai-film-studio-api",
         "ai_provider": "ollama-local",
         "model": OLLAMA_MODEL,
+        "storage": "sqlite-local",
     }
+
+
+@app.get("/api/films")
+async def films(limit: int = Query(default=50, ge=1, le=100)):
+    return {"projects": list_projects(limit=limit)}
+
+
+@app.get("/api/films/{project_id}")
+async def film(project_id: str):
+    project = get_project(project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Projeto não encontrado.")
+    return project
 
 
 @app.post("/api/films/plan")
@@ -86,11 +106,18 @@ async def plan_film(brief: FilmBrief):
         answer = result.get("message", {}).get("content", "").strip()
         if not answer:
             raise HTTPException(status_code=502, detail="O modelo local retornou uma resposta vazia.")
+
+        project = save_project(
+            brief.model_dump(),
+            answer,
+            provider="ollama-local",
+            model=OLLAMA_MODEL,
+        )
         return {
             "status": "planned",
             "provider": "ollama-local",
             "model": OLLAMA_MODEL,
-            "project": brief.model_dump(),
+            "project": project,
             "plan_markdown": answer,
         }
     except httpx.ConnectError as exc:
@@ -107,4 +134,9 @@ async def plan_film(brief: FilmBrief):
         raise HTTPException(
             status_code=504,
             detail="O modelo local demorou demais para responder. Tente um briefing menor.",
+        ) from exc
+    except (ValueError, KeyError, TypeError) as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="O Ollama retornou uma resposta em formato inesperado.",
         ) from exc
