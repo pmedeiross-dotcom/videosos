@@ -1,80 +1,52 @@
-# AI Film Studio — arquitetura inicial
+# AI Film Studio — arquitetura particular, local e sem serviços pagos
 
 ## Objetivo
 
-Evoluir o VideoSOS para um estúdio de produção cinematográfica assistido por agentes, usando a API da OpenAI como cérebro de planejamento. A geração de vídeo, imagem e áudio continuará desacoplada e será feita por provedores selecionáveis.
+Evoluir o VideoSOS para um estúdio cinematográfico de uso particular, sem monetização, assinaturas, APIs pagas ou dependência obrigatória de serviços em nuvem.
 
-## Estratégia
+## Regra de projeto
 
-- Preservar a aplicação VideoSOS existente como interface de geração e edição.
-- Desenvolver o backend de orquestração em Python/FastAPI, separado do frontend Next.js.
-- Usar OpenAI Agents SDK para coordenar agentes especializados.
-- Não chamar provedores de vídeo diretamente a partir do navegador.
-- Guardar chaves de API somente no backend/ambiente seguro.
-- Manter aprovação humana antes de gerar grandes lotes de cenas ou consumir créditos relevantes.
+**Nenhuma funcionalidade essencial pode exigir pagamento por uso.** Priorizar execução local, software livre/open source e modelos com pesos disponíveis para download. Não integrar provedores pagos como fal.ai, Runware ou OpenAI API no fluxo padrão. Se existirem integrações antigas no editor, elas não devem ser necessárias para o AI Film Studio.
 
-## Fluxo de produção
+## Arquitetura local
 
-1. Briefing: ideia, duração, idioma, público e estilo.
-2. Pesquisa e roteiro: premissa, estrutura dramática, cenas e diálogos.
-3. Bíblia visual: fichas de personagens, figurino, cenários, paleta e referências.
-4. Storyboard: planos, enquadramentos, movimento de câmera e duração estimada.
-5. Produção: gerar imagens de referência, clipes, vozes, música e efeitos por adaptadores de provedores.
-6. Montagem: organizar os clipes na timeline já existente; usar Remotion/FFmpeg onde fizer sentido.
-7. Controle de qualidade: validar continuidade, duração, áudio, legendas e arquivos ausentes.
-8. Exportação: renderizar MP4 e registrar custos e proveniência dos ativos.
+- Interface: Next.js/React já existente no VideoSOS.
+- Orquestração: Python + FastAPI no computador do usuário.
+- Modelo de linguagem: Ollama, com modelo local (inicialmente Qwen 2.5 3B).
+- Persistência: SQLite e arquivos locais.
+- Imagens: ComfyUI com modelos locais compatíveis com o hardware.
+- Edição e renderização: FFmpeg e Remotion.
+- Áudio: ferramentas locais e bibliotecas open source.
+- Vídeo: priorizar montagem de imagens, clipes próprios e movimentos de câmera simulados quando a geração de vídeo local não for viável.
 
-## Arquitetura
+## Pipeline
 
-- Frontend: Next.js/React já existente no VideoSOS.
-- API de orquestração: Python + FastAPI.
-- Agentes: OpenAI Agents SDK (diretor, roteirista, diretor de fotografia, continuidade e editor).
-- Contratos: Pydantic/JSON para briefing, cenas, personagens e planos.
-- Estado inicial: SQLite em desenvolvimento; PostgreSQL quando houver execução multiusuário.
-- Fila futura: Redis + worker para tarefas demoradas.
-- Mídia: armazenamento local em desenvolvimento; object storage compatível com S3 em produção.
-- Renderização: Remotion e FFmpeg.
-- Geração visual: adaptadores para fal.ai, Runware, ComfyUI e outros provedores compatíveis.
+1. Briefing local.
+2. Roteiro e estrutura dramática com LLM local.
+3. Bíblia visual de personagens e cenários.
+4. Storyboard com imagens de referência.
+5. Produção com recursos locais, sem APIs pagas obrigatórias.
+6. Montagem de cenas na timeline.
+7. Trilha, narração, legendas e efeitos com ferramentas locais.
+8. Renderização MP4 via FFmpeg/Remotion.
 
-## Regras de custo e segurança
+## Custos e privacidade
 
-- Estimar custo antes de iniciar geração.
-- Exigir confirmação antes de executar lotes pagos.
-- Permitir modelos locais/gratuitos quando o hardware permitir.
-- Nunca expor OPENAI_API_KEY, FAL_KEY ou RUNWARE_API_KEY no frontend.
-- Salvar prompts, modelo, parâmetros, custo estimado/real e IDs dos ativos.
-- Respeitar licenças dos repositórios e dos modelos integrados.
+- Sem OpenAI API, fal.ai, Runware ou outros serviços pagos no fluxo essencial.
+- Sem chaves de API pagas.
+- Prompts, roteiros e projetos permanecem no computador.
+- Downloads iniciais de modelos podem exigir internet e espaço em disco.
+- O uso do computador e energia elétrica não é custo de serviço, mas continua sendo recurso físico.
 
-## Fases
+## Limitação de hardware
 
-### Fase 1 — MVP de pré-produção
-- API FastAPI.
-- Agente diretor/roteirista.
-- Briefing estruturado.
-- Plano de filme com cenas, personagens e planos.
-- Persistência simples e testes.
+A geração de vídeo realista local exige GPU dedicada e memória considerável. Em computadores sem GPU adequada, a produção deve usar imagens, movimento de câmera simulado, clipes próprios e renderização tradicional. Não prometer geração ilimitada de vídeo realista em hardware insuficiente.
 
-### Fase 2 — Bíblia visual e storyboard
-- Fichas persistentes de personagens.
-- Referências visuais.
-- Storyboard editável e aprovação humana.
+## Etapas de desenvolvimento
 
-### Fase 3 — Geração audiovisual
-- Adaptadores de imagem, vídeo, voz e música.
-- Orçamento e controle de créditos.
-- Retentativas e retomada de tarefas.
-
-### Fase 4 — Montagem e QA
-- Integração com timeline VideoSOS.
-- Renderização e validação automática.
-- Exportação MP4.
-
-### Fase 5 — Autonomia controlada
-- Fila de trabalhos.
-- Agentes especializados.
-- Revisão de cenas e regeneração seletiva.
-- Painel de custos e histórico.
-
-## Limites do MVP
-
-A primeira versão não promete gerar um longa-metragem completo gratuitamente. Ela transforma um briefing em um plano de produção estruturado. A geração de vídeo realista depende de modelos, hardware e/ou APIs externas, frequentemente cobrados por uso.
+1. Pré-produção com LLM local.
+2. Persistência local de projetos, personagens e cenas.
+3. Storyboard e referências visuais.
+4. Montagem automática de imagens/clipes usando FFmpeg/Remotion.
+5. Integração opcional com ComfyUI para geração de imagens local.
+6. Testes e otimização para o hardware disponível.
