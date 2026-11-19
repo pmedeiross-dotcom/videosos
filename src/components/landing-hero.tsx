@@ -55,6 +55,14 @@ export default function Hero() {
                 {t("starGithub")}
               </Link>
             </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="min-w-[200px] border-amber-500/50 text-amber-300 hover:bg-amber-500/10"
+              asChild
+            >
+              <Link href={`/${locale}/studio`}>AI Film Studio</Link>
+            </Button>
           </div>
         </div>
 
