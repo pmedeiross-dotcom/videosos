@@ -153,7 +153,7 @@ export default function FilmStudioPage() {
               {loading ? "O diretor está desenvolvendo o projeto..." : "Gerar plano cinematográfico"}
             </button>
             <p className="text-xs text-neutral-500">
-              A geração utiliza a API configurada no backend e pode gerar cobrança conforme o modelo escolhido.
+              A geração usa um modelo local pelo Ollama. Não há cobrança por requisição.
             </p>
           </form>
         </section>
