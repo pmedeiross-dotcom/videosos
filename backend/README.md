@@ -52,7 +52,21 @@ uvicorn app.main:app --reload --port 8000
 - Saúde: http://localhost:8000/health
 - Documentação: http://localhost:8000/docs
 
-## 4. Projetos e testes\n\nOs planos gerados são salvos automaticamente em `backend/data/films.db` (SQLite). A API disponibiliza:\n\n- `GET /api/films`: lista os projetos salvos.\n- `GET /api/films/{id}`: abre um projeto salvo.\n- `POST /api/films/plan`: gera e salva um novo plano.\n\nPara executar os testes do armazenamento local:\n\n```powershell\npytest\n```\n\n## 5. Iniciar o frontend
+## 4. Projetos e testes
+
+Os planos gerados são salvos automaticamente em `backend/data/films.db` (SQLite). A API disponibiliza:
+
+- `GET /api/films`: lista os projetos salvos.
+- `GET /api/films/{id}`: abre um projeto salvo.
+- `POST /api/films/plan`: gera e salva um novo plano.
+
+Para executar os testes do armazenamento local:
+
+```powershell
+pytest
+```
+
+## 5. Iniciar o frontend
 
 Na raiz do projeto, crie `.env.local`:
 
