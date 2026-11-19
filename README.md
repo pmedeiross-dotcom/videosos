@@ -124,6 +124,17 @@ You can use either provider independently or both simultaneously. Simply add you
 
 Both API keys are stored locally in your browser and never sent to our servers.
 
+## AI Film Studio — modo local e particular
+
+Esta branch inclui uma área de pré-produção que utiliza Ollama local e SQLite, sem exigir chave de API ou pagamento por geração.
+
+1. Siga o guia em [backend/README.md](./backend/README.md) para instalar Python e Ollama.
+2. Baixe o modelo local com `ollama pull qwen2.5:3b`.
+3. Inicie a API FastAPI na pasta `backend`.
+4. Inicie o Next.js e abra `http://localhost:3000/pt/studio`.
+
+O AI Film Studio gera e salva planos de pré-produção no computador. **Ele ainda não gera, sozinho, um filme completo com cenas de vídeo realistas.** A edição original do VideoSOS também mantém integrações opcionais com fal.ai e Runware; esses provedores não fazem parte do fluxo local do AI Film Studio.
+
 ## For Developers
 
 ### Updating Model Information
