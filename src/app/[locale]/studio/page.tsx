@@ -31,7 +31,34 @@ export default function FilmStudioPage() {
   });
   const [plan, setPlan] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);\n  const [savedProjects, setSavedProjects] = useState<SavedProject[]>([]);\n\n  async function refreshProjects() {\n    try {\n      const response = await fetch(`${API_URL}/api/films`);\n      if (response.ok) {\n        const data = await response.json();\n        setSavedProjects(data.projects || []);\n      }\n    } catch {\n      // A API local pode estar desligada enquanto o usuário prepara o briefing.\n    }\n  }\n\n  useEffect(() => { void refreshProjects(); }, []);\n\n  async function openProject(id: string) {\n    try {\n      const response = await fetch(`${API_URL}/api/films/${id}`);\n      if (!response.ok) throw new Error("Não foi possível abrir este projeto.");\n      const data = await response.json();\n      setPlan(data.plan_markdown || "");\n      setError("");\n    } catch (err) {\n      setError(err instanceof Error ? err.message : "Falha ao abrir projeto.");\n    }\n  }
+  const [loading, setLoading] = useState(false);
+  const [savedProjects, setSavedProjects] = useState<SavedProject[]>([]);
+
+  async function refreshProjects() {
+    try {
+      const response = await fetch(`${API_URL}/api/films`);
+      if (response.ok) {
+        const data = await response.json();
+        setSavedProjects(data.projects || []);
+      }
+    } catch {
+      // A API local pode estar desligada enquanto o usuário prepara o briefing.
+    }
+  }
+
+  useEffect(() => { void refreshProjects(); }, []);
+
+  async function openProject(id: string) {
+    try {
+      const response = await fetch(`${API_URL}/api/films/${id}`);
+      if (!response.ok) throw new Error("Não foi possível abrir este projeto.");
+      const data = await response.json();
+      setPlan(data.plan_markdown || "");
+      setError("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao abrir projeto.");
+    }
+  }
 
   function update<K extends keyof FilmBrief>(key: K, value: FilmBrief[K]) {
     setBrief((current) => ({ ...current, [key]: value }));
@@ -53,7 +80,8 @@ export default function FilmStudioPage() {
       if (!response.ok) {
         throw new Error(data.detail || `Falha na API (HTTP ${response.status})`);
       }
-      setPlan(data.plan_markdown || "A API não retornou um plano.");\n      await refreshProjects();
+      setPlan(data.plan_markdown || "A API não retornou um plano.");
+      await refreshProjects();
     } catch (err) {
       setError(
         err instanceof Error
