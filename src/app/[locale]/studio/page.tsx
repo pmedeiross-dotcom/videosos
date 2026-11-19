@@ -183,8 +183,25 @@ export default function FilmStudioPage() {
               {loading ? "O diretor está desenvolvendo o projeto..." : "Gerar plano cinematográfico"}
             </button>
             <p className="text-xs text-neutral-500">
-              A geração usa um modelo local pelo Ollama. Não há cobrança por requisição.
+              A geração usa um modelo local pelo Ollama. Seus projetos ficam salvos no SQLite do computador. Não há cobrança por requisição.
             </p>
+            <div className="border-t border-neutral-800 pt-5">
+              <h3 className="text-sm font-semibold text-neutral-300">Projetos salvos</h3>
+              {savedProjects.length === 0 ? (
+                <p className="mt-2 text-sm text-neutral-500">Seus projetos gerados aparecerão aqui.</p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {savedProjects.map((project) => (
+                    <li key={project.id}>
+                      <button type="button" onClick={() => void openProject(project.id)} className="w-full rounded-lg border border-neutral-800 px-3 py-2 text-left text-sm hover:border-amber-400">
+                        <span className="block font-medium text-neutral-200">{project.title}</span>
+                        <span className="text-xs text-neutral-500">{new Date(project.created_at).toLocaleString("pt-BR")}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </form>
         </section>
 
